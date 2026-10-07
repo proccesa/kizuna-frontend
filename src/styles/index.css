@@ -1,0 +1,117 @@
+@import "tailwindcss";
+
+/*
+ * Tokens de diseño Kizuna — ver docs/MANUAL_DE_MARCA.md
+ * Petróleo y menta sobre blanco cálido. Superficies planas, sin degradados.
+ * Reglas: la menta es acento de marca (poco uso) y nunca un estado; las alertas
+ * usan `danger`, las advertencias `warning` y las confirmaciones `success`.
+ */
+@theme {
+  --font-sans: 'Figtree Variable', ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-display: 'Bricolage Grotesque Variable', 'Figtree Variable', ui-sans-serif, sans-serif;
+
+  /* Marca */
+  --color-petrol: #0F4C4F;        /* Petróleo: color principal, texto fuerte, acciones */
+  --color-petrol-hover: #18605F;
+  --color-mint: #5CC8A8;          /* Menta: acento de marca. Con texto oscuro encima. */
+  --color-mint-hover: #4BB696;
+  --color-mint-ink: #1D7660;      /* Menta para texto e íconos (contraste AA) */
+  --color-mint-soft: #DDF3EB;
+  --color-lime: #E9F7A6;          /* Lima: la intersección del isotipo, destacados, "Tú" */
+  --color-lime-ink: #55650F;
+  --color-lime-soft: #F4FBD8;
+  --color-mist: #E1EEEE;          /* Bruma: tinte petróleo suave para selección y citas de Kizuna */
+  --color-mist-ink: #1E5658;
+
+  /* Neutros cálidos */
+  --color-ink: #13292B;
+  --color-body: #3C4E50;
+  --color-muted: #65777A;
+  --color-subtle: #9AA7A8;
+  --color-line: #E3E1DA;
+  --color-line-strong: #D1CEC4;
+  --color-paper: #F4F2EC;         /* Papel de marca: login y espacios de marca */
+  --color-cream: #F7F6F2;         /* Lienzo de las pantallas de trabajo */
+  --color-sand: #EEEDE7;          /* Superficie secundaria / hover */
+  --color-surface: #FFFFFF;
+
+  /* Estados semánticos (ver StatusPill) */
+  --color-success: #2A7D3F;       /* Confirmada, activo: verde hoja, distinto de la menta */
+  --color-success-soft: #E2F2E2;
+  --color-warning: #B45309;       /* Pendiente, por vencer, ocupación alta */
+  --color-warning-soft: #FEF1D6;
+  --color-danger: #CF2B2B;        /* Bloqueada, error */
+  --color-danger-hover: #B21F1F;
+  --color-danger-soft: #FDE7E7;
+
+  --radius-card: 1.125rem;
+
+  --shadow-card: 0 1px 2px rgba(15, 76, 79, 0.04);
+  --shadow-float: 0 12px 32px -12px rgba(15, 76, 79, 0.22);
+  --shadow-pop: 0 24px 64px -16px rgba(15, 76, 79, 0.3);
+
+  --animate-fade-in: fade-in 0.18s ease-out;
+  --animate-pop-in: pop-in 0.22s cubic-bezier(0.2, 0.9, 0.3, 1.15);
+  --animate-slide-in: slide-in 0.28s cubic-bezier(0.2, 0.8, 0.2, 1);
+  --animate-enter: enter 0.4s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+
+  @keyframes fade-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  @keyframes pop-in {
+    from { opacity: 0; transform: translateY(6px) scale(0.97); }
+    to { opacity: 1; transform: none; }
+  }
+
+  @keyframes slide-in {
+    from { transform: translateX(100%); }
+    to { transform: none; }
+  }
+
+  @keyframes enter {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: none; }
+  }
+}
+
+@layer base {
+  html {
+    -webkit-font-smoothing: antialiased;
+  }
+
+  body {
+    margin: 0;
+    background: var(--color-cream);
+    color: var(--color-body);
+    font-family: var(--font-sans);
+  }
+
+  h1, h2, h3 {
+    font-family: var(--font-display);
+    color: var(--color-ink);
+  }
+
+  ::selection {
+    background: var(--color-lime-soft);
+    color: var(--color-ink);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-mint-ink);
+    outline-offset: 2px;
+  }
+}
+
+@utility tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- Isotipo Kizuna "Encuentro": la IPS y el paciente coinciden; la intersección es la cita. -->
+  <defs><clipPath id="k-clip"><circle cx="24" cy="32" r="20"/></clipPath></defs>
+  <circle cx="24" cy="32" r="20" fill="#0F4C4F"/>
+  <circle cx="40" cy="32" r="20" fill="#5CC8A8"/>
+  <circle cx="40" cy="32" r="20" fill="#E9F7A6" clip-path="url(#k-clip)"/>
+</svg>
