@@ -7,20 +7,24 @@ import {
   BriefcaseMedical,
   Building2,
   CalendarCheck2,
+  Boxes,
   ClipboardList,
   FileText,
   Landmark,
   Stethoscope,
   UsersRound,
 } from 'lucide-react';
-import { Badge, Card, Progress } from '@/components/ui';
-import { CONTRATOS, CORRIDA, ENTIDADES, ESPECIALISTAS, POBLACIONES } from '@/demo/datos';
+import { Badge, Card } from '@/components/ui';
 import { cn } from '@/lib/cn';
 import { formatDate, formatNumber } from '@/lib/format';
 import { useAuth } from '@/modules/auth/hooks/useAuth';
+import { useContratos, useEntidades, usePoblaciones, useResumenContratos, useResumenPoblaciones } from '@/modules/contratacion/hooks/useContratacion';
 import { PERMISOS } from '@/modules/auth/permisos';
 import { usePrestadores, useSedes } from '@/modules/red/hooks/useRed';
 import { usePortafolio } from '@/modules/servicios/hooks/useServicios';
+import { useResumenTalento } from '@/modules/talento/hooks/useTalento';
+import { useResumenInventario } from '@/modules/inventario/hooks/useInventario';
+import { useResumenProgramacion } from '@/modules/programacion/hooks/useProgramacion';
 import { useUsuarios } from '@/modules/usuarios/hooks/useUsuarios';
 
 function saludo() {
@@ -40,34 +44,6 @@ interface Paso {
   /** `bloqueo` impide programar pacientes; `aviso` requiere revisión. */
   severidad?: 'bloqueo' | 'aviso';
 }
-
-const poblacionesSinCargue = POBLACIONES.filter((p) => !p.archivo);
-const pacientes = POBLACIONES.reduce((s, p) => s + p.pacientes, 0);
-const conCita = POBLACIONES.reduce((s, p) => s + p.programados, 0);
-const contratosPorVencer = CONTRATOS.filter((c) => c.estado === 'Por vencer');
-
-/** El orden en que Kizuna necesita la información para poder programar. */
-/** Pasos con datos de ejemplo; el de prestadores y sedes se arma con datos reales en el componente. */
-const RUTA_DEMO: Paso[] = [
-  { to: '/entidades', icon: Landmark, titulo: 'Entidades', dato: `${ENTIDADES.length} EPS y aseguradoras` },
-  {
-    to: '/contratos',
-    icon: FileText,
-    titulo: 'Contratos',
-    dato: `${CONTRATOS.length} contratos · PGP, evento y cápita`,
-    alerta: contratosPorVencer.length ? `${contratosPorVencer.length} por vencer` : undefined,
-    severidad: 'aviso',
-  },
-  {
-    to: '/poblaciones',
-    icon: UsersRound,
-    titulo: 'Poblaciones',
-    dato: `${formatNumber(pacientes)} pacientes`,
-    alerta: poblacionesSinCargue.length ? `${poblacionesSinCargue.length} sin cargue del mes` : undefined,
-    severidad: 'bloqueo',
-  },
-  { to: '/especialistas', icon: BriefcaseMedical, titulo: 'Especialistas', dato: `${ESPECIALISTAS.filter((e) => e.activo).length} profesionales activos` },
-];
 
 export function DashboardPage() {
   const { usuario, can } = useAuth();
@@ -90,6 +66,45 @@ export function DashboardPage() {
     alerta: !verRed ? undefined : totalPrestadores === 0 ? 'Sin prestadores' : totalSedes === 0 ? 'Sin sedes activas' : undefined,
     severidad: 'bloqueo',
   };
+  const verEntidades = can(PERMISOS.entidades.listar);
+  const verContratos = can(PERMISOS.contratos.listar);
+  const verPoblaciones = can(PERMISOS.poblaciones.listar);
+  const entidades = useEntidades({ por_pagina: 1, activo: true }, verEntidades);
+  const resumenContratos = useResumenContratos(verContratos);
+  const contratosPorVencer = useContratos({ estado: 'POR_VENCER', por_pagina: 5 }, verContratos);
+  const resumenPoblaciones = useResumenPoblaciones(verPoblaciones);
+  const poblacionesSinCargue = usePoblaciones({ sin_cargue_mes: true, activo: true, por_pagina: 5 }, verPoblaciones);
+  const totalEntidades = entidades.data?.paginacion.total;
+  const rc = resumenContratos.data;
+  const rp = resumenPoblaciones.data;
+
+  const pasosContratacion: Paso[] = [
+    {
+      to: '/entidades',
+      icon: Landmark,
+      titulo: 'Entidades',
+      dato: !verEntidades ? 'Requiere permiso para ver entidades' : totalEntidades === undefined ? 'Cargando…' : `${totalEntidades} ${totalEntidades === 1 ? 'entidad activa' : 'entidades activas'}`,
+      alerta: verEntidades && totalEntidades === 0 ? 'Sin entidades' : undefined,
+      severidad: 'bloqueo',
+    },
+    {
+      to: '/contratos',
+      icon: FileText,
+      titulo: 'Contratos',
+      dato: !verContratos ? 'Requiere permiso para ver contratos' : !rc ? 'Cargando…' : `${rc.en_ejecucion} en ejecución · PGP, evento y cápita`,
+      alerta: !rc ? undefined : rc.en_ejecucion === 0 ? 'Sin contratos vigentes' : rc.por_vencer ? `${rc.por_vencer} por vencer` : undefined,
+      severidad: rc && rc.en_ejecucion === 0 ? 'bloqueo' : 'aviso',
+    },
+    {
+      to: '/poblaciones',
+      icon: UsersRound,
+      titulo: 'Poblaciones',
+      dato: !verPoblaciones ? 'Requiere permiso para ver poblaciones' : !rp ? 'Cargando…' : `${formatNumber(rp.pacientes)} pacientes en ${rp.poblaciones} ${rp.poblaciones === 1 ? 'población' : 'poblaciones'}`,
+      alerta: !rp ? undefined : rp.poblaciones === 0 ? 'Sin poblaciones' : rp.sin_cargue_mes ? `${rp.sin_cargue_mes} sin cargue del mes` : undefined,
+      severidad: 'bloqueo',
+    },
+  ];
+
   const verPortafolio = can(PERMISOS.portafolio.listar);
   const portafolio = usePortafolio({ por_pagina: 1 }, verPortafolio);
   const portafolioSinEsp = usePortafolio({ por_pagina: 1, sin_especialidad: true }, verPortafolio);
@@ -115,8 +130,50 @@ export function DashboardPage() {
     },
   ];
 
-  // Orden de configuración: red → contratación (ejemplo) → servicios → talento (ejemplo).
-  const RUTA = [pasoRed, ...RUTA_DEMO.slice(0, 3), ...pasosServicios, ...RUTA_DEMO.slice(3)];
+  const verTalento = can(PERMISOS.especialistas.listar);
+  const talento = useResumenTalento(verTalento);
+  const pasoTalento: Paso = {
+    to: '/especialistas',
+    icon: BriefcaseMedical,
+    titulo: 'Especialistas',
+    dato: !verTalento
+      ? 'Requiere permiso para ver especialistas'
+      : !talento.data
+        ? 'Cargando…'
+        : `${talento.data.activos} profesionales activos · ${formatNumber(talento.data.horas_semana)} h de agenda por semana`,
+    alerta: !talento.data ? undefined : talento.data.activos === 0 ? 'Sin especialistas' : talento.data.sin_agenda > 0 ? `${talento.data.sin_agenda} sin agenda` : undefined,
+    severidad: 'bloqueo',
+  };
+
+  const { data: prog } = useResumenProgramacion(can(PERMISOS.programacion.listar));
+  const verInventario = can(PERMISOS.inventario.listar);
+  const inventario = useResumenInventario(verInventario);
+  const ri = inventario.data;
+  const pasoInventario: Paso = {
+    to: ri?.cups.sin_requerimientos ? '/requerimientos?pendientes=1' : '/biomedicos',
+    icon: Boxes,
+    titulo: 'Inventario',
+    dato: !verInventario
+      ? 'Requiere permiso para ver el inventario'
+      : !ri
+        ? 'Cargando…'
+        : `${ri.equipos.operativos} equipos operativos · ${ri.instrumental.operativas} cajas · ${ri.insumos.total} insumos`,
+    alerta: !ri
+      ? undefined
+      : ri.cups.sin_requerimientos
+        ? `${ri.cups.sin_requerimientos} CUPS sin requerimientos`
+        : ri.equipos.calibracion_vencida
+          ? `${ri.equipos.calibracion_vencida} equipos con calibración vencida`
+          : ri.equipos.mantenimiento_vencido
+            ? `${ri.equipos.mantenimiento_vencido} con mantenimiento vencido`
+          : ri.insumos.bajo_minimo
+            ? `${ri.insumos.bajo_minimo} insumos bajo el mínimo`
+            : undefined,
+    severidad: ri?.cups.sin_requerimientos ? 'bloqueo' : 'aviso',
+  };
+
+  // Orden de configuración: red → contratación → servicios → talento humano → inventario.
+  const RUTA = [pasoRed, ...pasosContratacion, ...pasosServicios, pasoTalento, pasoInventario];
   const primerNombre = usuario?.operador?.nombre || usuario?.name?.split(' ')[0];
   const alertas = RUTA.filter((p) => p.alerta);
   const bloqueos = alertas.filter((p) => p.severidad === 'bloqueo');
@@ -129,9 +186,6 @@ export function DashboardPage() {
           <p className="text-sm font-semibold text-mint-ink">{saludo()}, {primerNombre}</p>
           <h1 className="mt-1 text-[2.2rem] leading-tight font-bold tracking-[-0.02em] sm:text-[2.6rem]">Así va la programación de tus pacientes</h1>
         </div>
-        <Badge tone="lime" className="self-start sm:self-auto">
-          Módulos clínicos con datos de ejemplo
-        </Badge>
       </header>
 
       {/* Resultado de la programación */}
@@ -139,32 +193,33 @@ export function DashboardPage() {
         <Card className="animate-enter p-5 xl:col-span-2">
           <div className="flex items-start justify-between gap-3">
             <div>
-              <p className="text-sm font-semibold text-muted">Pacientes con cita</p>
-              <p className="tabular mt-1 font-display text-[2.6rem] leading-none font-bold text-ink">
-                {formatNumber(conCita)}
-                <span className="text-lg font-semibold text-muted"> / {formatNumber(pacientes)}</span>
-              </p>
+              <p className="text-sm font-semibold text-muted">Cirugías en los próximos 7 días</p>
+              <p className="tabular mt-1 font-display text-[2.6rem] leading-none font-bold text-ink">{prog ? formatNumber(prog.programadas_7_dias) : '—'}</p>
             </div>
             <span className="flex size-11 items-center justify-center rounded-2xl rounded-bl-md bg-success-soft text-success">
               <CalendarCheck2 className="size-5" aria-hidden />
             </span>
           </div>
-          <Progress value={(conCita / pacientes) * 100} tone="success" className="mt-4" label="Cobertura de programación" />
-          <p className="mt-2 text-sm text-muted">
-            <span className="tabular">{Math.round((conCita / pacientes) * 100)}%</span> de la población contratada ya tiene cita asignada.
+          <p className="mt-3 text-sm text-muted">
+            {prog ? `${prog.programadas_hoy} hoy · ${prog.realizadas_mes} realizadas este mes` : 'Cargando…'}
+            {rp ? ` · ${formatNumber(rp.pacientes)} pacientes en las poblaciones de tus contratos` : ''}.
           </p>
         </Card>
-        <Card className="animate-enter p-5">
-          <p className="text-sm font-semibold text-muted">Programados hoy</p>
-          <p className="tabular mt-1 font-display text-[2.6rem] leading-none font-bold text-ink">{CORRIDA.programados}</p>
-          <p className="mt-2 text-sm text-muted">De {CORRIDA.evaluados} evaluados a las {CORRIDA.hora}</p>
-        </Card>
+        <Link to="/programacion?vista=cola" className="group">
+          <Card className="h-full p-5 transition-colors group-hover:border-line-strong">
+            <p className="text-sm font-semibold text-muted">Aptos por programar</p>
+            <p className="tabular mt-1 font-display text-[2.6rem] leading-none font-bold text-ink">{prog ? formatNumber(prog.por_programar) : '—'}</p>
+            <p className={cn('mt-2 text-sm', prog?.aval_por_vencer ? 'font-semibold text-warning' : 'text-muted')}>
+              {prog?.aval_por_vencer ? `${prog.aval_por_vencer} con el aval por vencer` : 'Con aval de pre-anestesia vigente'}
+            </p>
+          </Card>
+        </Link>
         <Link to="/programacion" className="group">
           <Card className="h-full bg-petrol p-5 text-white transition-colors group-hover:bg-petrol-hover">
-            <p className="text-sm font-semibold text-white/70">Por resolver</p>
-            <p className="tabular mt-1 font-display text-[2.6rem] leading-none font-bold">{CORRIDA.pendientes}</p>
+            <p className="text-sm font-semibold text-white/70">{prog?.propuesta_pendiente ? 'Propuesta lista' : 'Programación'}</p>
+            <p className="mt-1 font-display text-2xl leading-tight font-bold">{prog?.propuesta_pendiente ? 'Revisar y aprobar' : 'Generar propuesta'}</p>
             <p className="mt-2 flex items-center gap-1.5 text-sm text-white/80">
-              Revisar cola <ArrowRight className="size-4 transition-transform group-hover:translate-x-0.5" aria-hidden />
+              Ir a programación <ArrowRight className="size-4 transition-transform group-hover:translate-x-0.5" aria-hidden />
             </p>
           </Card>
         </Link>
@@ -240,9 +295,9 @@ export function DashboardPage() {
               </p>
             </div>
             <ul className="mt-3 divide-y divide-line">
-              {poblacionesSinCargue.map((p) => (
+              {poblacionesSinCargue.data?.datos.map((p) => (
                 <li key={`p${p.id}`}>
-                  <Link to="/poblaciones" className="flex gap-3 px-6 py-3.5 transition-colors hover:bg-cream">
+                  <Link to={`/poblaciones?ver=${p.id}`} className="flex gap-3 px-6 py-3.5 transition-colors hover:bg-cream">
                     <Ban className="mt-0.5 size-4 shrink-0 text-danger" aria-hidden />
                     <span className="text-sm">
                       <span className="block font-semibold text-ink">Población sin cargar</span>
@@ -264,14 +319,17 @@ export function DashboardPage() {
                   </Link>
                 </li>
               )}
-              {contratosPorVencer.map((c) => (
-                <li key={c.codigo}>
-                  <Link to="/contratos" className="flex gap-3 px-6 py-3.5 transition-colors hover:bg-cream">
+              {!poblacionesSinCargue.data?.datos.length && !totalSinEsp && !contratosPorVencer.data?.datos.length && (
+                <li className="px-6 py-4 text-sm text-muted">Nada pendiente por ahora.</li>
+              )}
+              {contratosPorVencer.data?.datos.map((c) => (
+                <li key={c.id}>
+                  <Link to={`/contratos?ver=${c.id}`} className="flex gap-3 px-6 py-3.5 transition-colors hover:bg-cream">
                     <AlertTriangle className="mt-0.5 size-4 shrink-0 text-warning" aria-hidden />
                     <span className="text-sm">
-                      <span className="block font-semibold text-ink">Contrato {c.codigo} por vencer</span>
+                      <span className="block font-semibold text-ink">Contrato {c.numero} por vencer</span>
                       <span className="text-muted">
-                        {ENTIDADES.find((e) => e.id === c.entidadId)?.nombre} · {c.modalidad} · vence el {formatDate(c.fin)}.
+                        {c.entidad.sigla || c.entidad.razon_social} · {c.modalidad.nombre} · vence el {formatDate(c.fecha_fin)}.
                       </span>
                     </span>
                   </Link>

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Link, NavLink, useLocation } from 'react-router-dom';
 import { ChevronDown, LogOut, Search, X } from 'lucide-react';
 import { Logo } from '@/components/brand/Logo';
@@ -36,12 +36,13 @@ export function Sidebar({ mobileOpen, onClose, onOpenPalette, onLogout }: Sideba
     () => (activeSection && activeSection !== 'General' ? activeSection : null),
   );
 
-  // Auto-expandir la sección activa cuando cambia de ruta
-  useEffect(() => {
-    if (activeSection && activeSection !== 'General') {
-      setOpenSection(activeSection);
-    }
-  }, [activeSection]);
+  // Auto-expandir la sección activa cuando cambia de ruta. Se ajusta durante el render
+  // (y no en un efecto) para evitar un render extra con la sección anterior abierta.
+  const [seccionPrevia, setSeccionPrevia] = useState(activeSection);
+  if (activeSection !== seccionPrevia) {
+    setSeccionPrevia(activeSection);
+    if (activeSection && activeSection !== 'General') setOpenSection(activeSection);
+  }
 
   const toggleSection = (section: string) => {
     setOpenSection((prev) => (prev === section ? null : section));

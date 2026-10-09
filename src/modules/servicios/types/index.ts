@@ -21,6 +21,8 @@ export interface PortafolioItem {
   sede_id: number;
   cups_id: number;
   duracion_minutos: number;
+  /** Tipo de sala en que se realiza en esta sede; null = no requiere sala. */
+  tipo_sala?: string | null;
   activo: boolean;
   cups: Pick<Cups, 'id' | 'codigo' | 'nombre' | 'seccion' | 'habilitado' | 'es_quirurgico'> & {
     especialidades: { id: number; codigo: string; nombre: string }[];

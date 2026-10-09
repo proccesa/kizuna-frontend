@@ -57,7 +57,7 @@ export function useServiciosMutations() {
     }),
     agregarPortafolio: useMutation({ mutationFn: (p: AgregarPortafolioPayload) => portafolioService.agregar(p), onSuccess }),
     actualizarPortafolio: useMutation({
-      mutationFn: ({ id, payload }: { id: number; payload: { duracion_minutos?: number; activo?: boolean } }) => portafolioService.actualizar(id, payload),
+      mutationFn: ({ id, payload }: { id: number; payload: { duracion_minutos?: number; activo?: boolean; tipo_sala?: string | null } }) => portafolioService.actualizar(id, payload),
       onSuccess,
       onError,
     }),

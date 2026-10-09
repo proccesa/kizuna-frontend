@@ -9,23 +9,37 @@ interface EspecialidadesPickerProps {
   seleccionadas: number[];
   onAlternar: (especialidadId: number, asignar: boolean) => void;
   etiqueta: string;
+  /** Lado hacia el que se abre el menú. */
+  alinear?: 'izquierda' | 'derecha';
+  textoBoton?: string;
 }
 
 /** Selector desplegable de especialidades con búsqueda. Cada clic asigna o quita al instante. */
-export function EspecialidadesPicker({ especialidades, seleccionadas, onAlternar, etiqueta }: EspecialidadesPickerProps) {
+export function EspecialidadesPicker({ especialidades, seleccionadas, onAlternar, etiqueta, alinear = 'derecha', textoBoton = 'Asignar' }: EspecialidadesPickerProps) {
   const [open, setOpen] = useState(false);
   const [filtro, setFiltro] = useState('');
   const ref = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  // Enfoca la búsqueda sin desplazar el panel o modal que contiene el menú.
+  useEffect(() => {
+    if (open) inputRef.current?.focus({ preventScroll: true });
+  }, [open]);
 
   useEffect(() => {
     if (!open) return;
     const cerrar = (e: MouseEvent) => !ref.current?.contains(e.target as Node) && setOpen(false);
-    const escape = (e: KeyboardEvent) => e.key === 'Escape' && setOpen(false);
+    // En captura y con preventDefault: Escape cierra el menú sin cerrar el panel o modal que lo contiene.
+    const escape = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return;
+      e.preventDefault();
+      setOpen(false);
+    };
     document.addEventListener('mousedown', cerrar);
-    document.addEventListener('keydown', escape);
+    document.addEventListener('keydown', escape, true);
     return () => {
       document.removeEventListener('mousedown', cerrar);
-      document.removeEventListener('keydown', escape);
+      document.removeEventListener('keydown', escape, true);
     };
   }, [open]);
 
@@ -35,12 +49,12 @@ export function EspecialidadesPicker({ especialidades, seleccionadas, onAlternar
   return (
     <div className="relative" ref={ref}>
       <Button size="sm" variant="secondary" icon={Plus} onClick={() => setOpen((v) => !v)} aria-expanded={open} aria-label={etiqueta}>
-        Asignar
+        {textoBoton}
       </Button>
       {open && (
-        <div className="animate-pop-in absolute right-0 z-30 mt-2 w-72 rounded-2xl border border-line bg-surface p-2 shadow-pop">
+        <div className={cn('animate-pop-in absolute z-30 mt-2 w-72 rounded-2xl border border-line bg-surface p-2 shadow-pop', alinear === 'derecha' ? 'right-0' : 'left-0')}>
           <input
-            autoFocus
+            ref={inputRef}
             value={filtro}
             onChange={(e) => setFiltro(e.target.value)}
             placeholder="Buscar especialidad"

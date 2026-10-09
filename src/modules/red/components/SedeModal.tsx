@@ -2,9 +2,8 @@ import { useEffect } from 'react';
 import { Controller, useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Button, Field, Input, Modal, Switch } from '@/components/ui';
-import { cn } from '@/lib/cn';
 import { applyServerErrors } from '@/lib/forms';
-import { DIAS_SEMANA } from '@/lib/horario';
+import { DiasSelector } from '@/components/DiasSelector';
 import { UbicacionSelect } from '@/modules/catalogos/components/UbicacionSelect';
 import { useRedMutations } from '../hooks/useRed';
 import { formToSedePayload, sedeSchema, sedeToForm, type SedeFormValues } from '../schema';
@@ -124,25 +123,8 @@ export function SedeModal({ open, prestador, sede, onClose }: SedeModalProps) {
             control={control}
             name="dias_atencion"
             render={({ field }) => (
-              <div className="mt-3 flex flex-wrap gap-1.5" role="group" aria-label="Días de atención">
-                {DIAS_SEMANA.map((dia) => {
-                  const activo = field.value.includes(dia.value);
-                  return (
-                    <button
-                      key={dia.value}
-                      type="button"
-                      aria-pressed={activo}
-                      title={dia.nombre}
-                      onClick={() => field.onChange(activo ? field.value.filter((d) => d !== dia.value) : [...field.value, dia.value])}
-                      className={cn(
-                        'size-10 cursor-pointer rounded-xl text-sm font-bold transition-colors',
-                        activo ? 'bg-petrol text-white' : 'border border-line-strong bg-surface text-muted hover:text-ink',
-                      )}
-                    >
-                      {dia.corto}
-                    </button>
-                  );
-                })}
+              <div className="mt-3">
+                <DiasSelector aria-label="Días de atención" value={field.value} onChange={field.onChange} />
               </div>
             )}
           />

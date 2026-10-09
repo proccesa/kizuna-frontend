@@ -43,7 +43,7 @@ export const portafolioService = {
     const { data } = await api.post<ApiResponse<{ creados: number; existentes: number }>>('/portafolio', payload);
     return data;
   },
-  async actualizar(id: number, payload: { duracion_minutos?: number; activo?: boolean }): Promise<ApiResponse<PortafolioItem>> {
+  async actualizar(id: number, payload: { duracion_minutos?: number; activo?: boolean; tipo_sala?: string | null }): Promise<ApiResponse<PortafolioItem>> {
     const { data } = await api.put<ApiResponse<PortafolioItem>>(`/portafolio/${id}`, payload);
     return data;
   },

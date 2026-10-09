@@ -20,7 +20,6 @@ export * from './Drawer';
 export * from './FilterTabs';
 export * from './Kbd';
 export * from './Vinculo';
-export * from './DemoBanner';
 export * from './Progress';
 export * from './Table';
 export * from './StatusPill';

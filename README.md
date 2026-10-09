@@ -4,8 +4,8 @@
 
 | Estado | Módulos |
 | :--- | :--- |
-| Conectados a la API | Autenticación, usuarios, operadores, roles y permisos, catálogos (DIVIPOLA, regímenes, modalidades de contratación, tipos de documento), prestadores y sedes |
-| Diseño con datos de ejemplo (`src/demo/datos.ts`) | Programación, entidades, contratos (PGP, evento, cápita), poblaciones, portafolio CUPS, CUPS y especialidades, especialistas |
+| Conectados a la API | Inventario (biomédicos, central de insumos e instrumental, salas, requerimientos por CUPS y verificación de disponibilidad), pre-anestesia (órdenes quirúrgicas, agenda, historias clínicas por plantilla, integraciones), autenticación, usuarios, operadores, roles y permisos, catálogos (DIVIPOLA, CUPS, regímenes, modalidades de contratación, tipos de documento), prestadores y sedes, entidades, contratos (PGP, evento, cápita) con sus sedes y CUPS pactados, poblaciones con cargue de pacientes, portafolio CUPS, CUPS y especialidades, especialistas con sus agendas, novedades y cargue masivo |
+| Diseño con datos de ejemplo (`src/demo/datos.ts`) | Programación automática (motor) |
 
 Las pantallas de diseño muestran un aviso visible. Para conectarlas, crea `services/` y `hooks/` en cada módulo (como en `usuarios`) y reemplaza las importaciones de `@/demo/datos`.
 Consume la API REST de `kizuna-backend` (Laravel + Sanctum).
@@ -22,6 +22,8 @@ npm run dev
 ```
 
 El backend debe estar corriendo (`php artisan serve`) y con datos base (`php artisan migrate --seed`).
+
+Para una demostración, `php artisan kizuna:demo` (en el backend) borra los datos operativos y carga una IPS ficticia completa: sedes, contratos, especialistas, inventario y órdenes en todos los estados del flujo. Imprime las cuentas de prueba y un token de integración. No corre en producción. El guion del video está en [docs/GUION-DEMO.md](../kizuna-backend/docs/GUION-DEMO.md).
 
 | Script | Descripción |
 | :--- | :--- |
@@ -56,9 +58,13 @@ src/
 │   ├── auth/            # Sesión, AuthProvider, guards de ruta, permisos
 │   ├── programacion/    # Agenda automática y cola de pacientes por programar
 │   ├── red/             # Prestadores y sedes (conectado a la API)
+│   ├── cirugia/         # Órdenes quirúrgicas, cita de pre-anestesia automática y reglas
+│   ├── historias/       # Historias clínicas: renderizador de plantillas y asistente clínico
+│   ├── inventario/      # Biomédicos, central, salas, requerimientos por CUPS y verificador
+│   ├── integraciones/   # Sistemas externos y sus tokens
 │   ├── contratacion/    # Entidades, contratos y poblaciones
 │   ├── servicios/       # Portafolio CUPS y relación CUPS ↔ especialidades
-│   ├── talento/         # Especialistas y cargue masivo
+│   ├── talento/         # Especialistas, agendas semanales, novedades y cargue masivo
 │   ├── usuarios/        # types · services · hooks · schema · components · pages
 │   ├── operadores/
 │   ├── roles/
@@ -96,6 +102,45 @@ Cada módulo sigue la misma estructura:
 | `GET` | `/catalogos/departamentos`, `/catalogos/departamentos/{id}/municipios` | Catálogos, selector departamento → municipio |
 | `GET` | `/catalogos/municipios?buscar=&departamento_id=` | Búsqueda de municipios (sin tildes, por nombre o código DANE) |
 | `GET` | `/catalogos/regimenes`, `/catalogos/modalidades-contratacion` | Catálogos |
+| `GET` | `/catalogos/cups?buscar=&habilitado=`, `/catalogos/cups/{id}` | Catálogo CUPS oficial (SISPRO), búsqueda por código o palabras |
+| `GET` | `/inventario/resumen` · `/inventario/verificar?cups_id=&sede_id=&fecha=&hora=` | Alertas del inventario · ¿hay sala, equipos, cajas e insumos para ese CUPS, sede y horario? |
+| `GET/POST/PUT/DELETE` | `/inventario/items` · `/inventario/unidades` | Catálogo (EQUIPO, INSTRUMENTAL, INSUMO) · equipos por placa y cajas |
+| `POST/PATCH` | `/inventario/unidades/{id}/mantenimientos` · `/inventario/mantenimientos/{id}` | Programar (bloquea el equipo) · terminar o cancelar (recalcula fechas) |
+| `GET/POST` | `/inventario/existencias` · `/inventario/movimientos` · `GET /inventario/items/{id}/movimientos` | Insumos por sede y lote · entrada, salida (primero en vencer) o ajuste |
+| `GET/PUT` | `/inventario/requerimientos` · `/inventario/requerimientos/{cupsId}` | CUPS del portafolio · lista base o ajuste por sede (`sede_id`) |
+| `POST` | `/inventario/importar/{unidades\|existencias}` | Cargue CSV con revisión previa |
+| `GET/POST/PUT/DELETE` | `/salas` | Quirófanos y salas de cada sede |
+| `POST` | `/integracion/inventario/unidades` · `/integracion/inventario/existencias` | **Token de integración** (`inventario:escribir`). Sincronizar desde el ERP o software de biomédica |
+| `GET/POST` | `/ordenes` (filtros: estado, prioridad, buscar) · `GET /ordenes/{id}` | Órdenes quirúrgicas; al crearla se valida la especialidad y se agenda la pre-anestesia |
+| `GET` | `/ordenes/resumen` · `/ordenes/paciente?tipo_documento=&numero_documento=` | Conteo por estado · buscar paciente para el registro manual |
+| `POST` | `/ordenes/importar` (`archivo`, `simular`) · `/ordenes/asignar-pendientes` | Cargue CSV de órdenes · reintentar cupo a las pendientes |
+| `GET/POST` | `/ordenes/{id}/cupos` · `/ordenes/{id}/reprogramar` · `/revalidar` · `/cancelar` | Cupos libres de anestesiología, mover la cita, revalidar una rechazada, cancelar |
+| `GET/PUT` | `/ordenes/reglas` | CUPS de la consulta, especialidad, vigencia del aval por ASA, horizonte, duración |
+| `GET` | `/citas?fecha=&tipo=PREANESTESIA` · `PATCH /citas/{id}/estado` | Agenda del día · cancelar o registrar inasistencia (la orden vuelve a buscar cupo) |
+| `GET` | `/plantillas-hc` | Plantillas de historia clínica y su versión vigente |
+| `GET/POST` | `/historias` · `GET/PUT /historias/{id}` | Abrir (desde una cita) · autoguardar borrador (devuelve escalas y alertas) |
+| `POST` | `/historias/{id}/finalizar` · `/historias/{id}/anular` | Finalizar (aplica el concepto a la orden) · anular con motivo |
+| `GET/POST/PUT/DELETE` | `/clientes-integracion` · `POST …/{id}/regenerar` | Sistemas externos y sus tokens |
+| `POST` | `/integracion/ordenes` · `GET /integracion/ordenes/{referencia}` | **Token de integración.** Recibir órdenes (idempotente por referencia) y consultar su estado |
+| `POST` | `/integracion/historias/preanestesia` | **Token de integración.** Concepto pre-anestésico hecho en otro sistema |
+| `GET/POST` | `/entidades` · `GET/PUT/DELETE /entidades/{id}` · `PATCH …/restaurar` | Entidades (EPS y pagadores) con regímenes, contratos en ejecución y pacientes |
+| `GET/POST` | `/contratos` (filtros: entidad_id, modalidad_contratacion_id, regimen_id, estado) | Contratos · crear con `sede_ids` |
+| `GET` | `/contratos/resumen` | En ejecución, por vencer, vencidos y valor por modalidad |
+| `GET/PUT/DELETE` | `/contratos/{id}` · `PATCH …/restaurar` | Detalle con sedes, poblaciones y CUPS sin portafolio |
+| `GET/POST` | `/contratos/{id}/cups` · `PUT/DELETE /contratos/{id}/cups/{cupsId}` | CUPS pactados (cantidad, tarifa, si están en el portafolio y si tienen especialidad) |
+| `GET/POST` | `/poblaciones` · `GET/PUT/DELETE /poblaciones/{id}` · `PATCH …/restaurar` | Poblaciones de cada contrato, con cohortes y últimos cargues |
+| `GET` | `/poblaciones/resumen` · `/poblaciones/{id}/pacientes` | Pacientes activos y sin cargue del mes · pacientes (buscar, cohorte, incluir_retirados) |
+| `POST` | `/poblaciones/{id}/cargar` (`archivo`, `simular`, `modo`) | Cargue CSV de pacientes: REEMPLAZAR (cargue del mes) o AGREGAR |
+| `GET/POST` | `/especialidades` · `GET/PUT/DELETE /especialidades/{id}` · `PATCH …/restaurar` | Especialidades |
+| `POST/DELETE` | `/especialidades/{id}/cups/{cupsId}` | Asignar o quitar un CUPS a una especialidad |
+| `GET/POST` | `/portafolio` · `PUT/DELETE /portafolio/{id}` | Portafolio CUPS por sede (alta masiva, duración, activo) |
+| `GET/POST` | `/especialistas` | Listado (filtros: buscar, estado, especialidad_id, sede_id, sin_agenda) · crear |
+| `GET` | `/especialistas/resumen` | Activos, horas de agenda por semana, sin agenda, con novedad hoy |
+| `GET/PUT/DELETE` | `/especialistas/{id}` · `PATCH …/restaurar` | Detalle con agendas y novedades · editar · eliminar (con sus franjas) · restaurar |
+| `POST` | `/especialistas/importar` (`archivo`, `simular`) | Cargue masivo CSV: primero revisión, luego carga |
+| `POST` | `/especialistas/{id}/agendas` · `PUT/DELETE /agendas/{id}` | Franjas semanales (sede, especialidad, días, horas, vigencia) |
+| `GET` | `/agendas?sede_id=&especialidad_id=` | Agenda semanal de una sede |
+| `POST` | `/especialistas/{id}/ausencias` · `DELETE /ausencias/{id}` | Novedades: vacaciones, incapacidades, licencias |
 | `GET/POST` | `/prestadores` | Listado con sedes (filtros: buscar, estado, naturaleza) · crear |
 | `GET/PUT/DELETE` | `/prestadores/{id}` | Detalle · editar · eliminar (con sus sedes) |
 | `PATCH` | `/prestadores/{id}/restaurar` | Restaurar con las sedes eliminadas junto a él |

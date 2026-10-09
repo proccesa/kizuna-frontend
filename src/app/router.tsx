@@ -40,12 +40,10 @@ export const router = createBrowserRouter([
           { index: true, element: page(() => import('@/modules/dashboard/pages/DashboardPage'), 'DashboardPage') },
           { path: 'perfil', element: page(() => import('@/modules/perfil/pages/PerfilPage'), 'PerfilPage') },
 
-          // Módulos clínicos (diseño con datos de ejemplo: src/demo/datos.ts)
-          { path: 'programacion', element: page(() => import('@/modules/programacion/pages/ProgramacionPage'), 'ProgramacionPage') },
-          { path: 'entidades', element: page(() => import('@/modules/contratacion/pages/EntidadesPage'), 'EntidadesPage') },
-          { path: 'contratos', element: page(() => import('@/modules/contratacion/pages/ContratosPage'), 'ContratosPage') },
-          { path: 'poblaciones', element: page(() => import('@/modules/contratacion/pages/PoblacionesPage'), 'PoblacionesPage') },
-          { path: 'especialistas', element: page(() => import('@/modules/talento/pages/EspecialistasPage'), 'EspecialistasPage') },
+          {
+            element: <ProtectedRoute permiso={PERMISOS.programacion.listar} />,
+            children: [{ path: 'programacion', element: page(() => import('@/modules/programacion/pages/ProgramacionPage'), 'ProgramacionPage') }],
+          },
 
           {
             element: <ProtectedRoute permiso={PERMISOS.usuarios.listar} />,
@@ -60,12 +58,64 @@ export const router = createBrowserRouter([
             children: [{ path: 'prestadores', element: page(() => import('@/modules/red/pages/PrestadoresPage'), 'PrestadoresPage') }],
           },
           {
+            element: <ProtectedRoute permiso={PERMISOS.ordenes.listar} />,
+            children: [{ path: 'ordenes', element: page(() => import('@/modules/cirugia/pages/OrdenesPage'), 'OrdenesPage') }],
+          },
+          {
+            element: <ProtectedRoute permiso={PERMISOS.citas.listar} />,
+            children: [{ path: 'preanestesia', element: page(() => import('@/modules/cirugia/pages/PreanestesiaPage'), 'PreanestesiaPage') }],
+          },
+          {
+            element: <ProtectedRoute permiso={PERMISOS.historias.listar} />,
+            children: [{ path: 'historias', element: page(() => import('@/modules/historias/pages/HistoriasPage'), 'HistoriasPage') }],
+          },
+          {
+            element: <ProtectedRoute permiso={PERMISOS.historias.ver} />,
+            children: [{ path: 'historias/:id', element: page(() => import('@/modules/historias/pages/HistoriaPage'), 'HistoriaPage') }],
+          },
+          {
+            element: <ProtectedRoute permiso={PERMISOS.integraciones.gestionar} />,
+            children: [{ path: 'integraciones', element: page(() => import('@/modules/integraciones/pages/IntegracionesPage'), 'IntegracionesPage') }],
+          },
+          {
+            element: <ProtectedRoute permiso={PERMISOS.inventario.listar} />,
+            children: [{ path: 'biomedicos', element: page(() => import('@/modules/inventario/pages/BiomedicosPage'), 'BiomedicosPage') }],
+          },
+          {
+            element: <ProtectedRoute permiso={PERMISOS.inventario.listar} />,
+            children: [{ path: 'central', element: page(() => import('@/modules/inventario/pages/CentralPage'), 'CentralPage') }],
+          },
+          {
+            element: <ProtectedRoute permiso={PERMISOS.inventario.listar} />,
+            children: [{ path: 'requerimientos', element: page(() => import('@/modules/inventario/pages/RequerimientosPage'), 'RequerimientosPage') }],
+          },
+          {
+            element: <ProtectedRoute permiso={PERMISOS.sedes.listar} />,
+            children: [{ path: 'salas', element: page(() => import('@/modules/inventario/pages/SalasPage'), 'SalasPage') }],
+          },
+          {
+            element: <ProtectedRoute permiso={PERMISOS.entidades.listar} />,
+            children: [{ path: 'entidades', element: page(() => import('@/modules/contratacion/pages/EntidadesPage'), 'EntidadesPage') }],
+          },
+          {
+            element: <ProtectedRoute permiso={PERMISOS.contratos.listar} />,
+            children: [{ path: 'contratos', element: page(() => import('@/modules/contratacion/pages/ContratosPage'), 'ContratosPage') }],
+          },
+          {
+            element: <ProtectedRoute permiso={PERMISOS.poblaciones.listar} />,
+            children: [{ path: 'poblaciones', element: page(() => import('@/modules/contratacion/pages/PoblacionesPage'), 'PoblacionesPage') }],
+          },
+          {
             element: <ProtectedRoute permiso={PERMISOS.portafolio.listar} />,
             children: [{ path: 'portafolio', element: page(() => import('@/modules/servicios/pages/PortafolioPage'), 'PortafolioPage') }],
           },
           {
             element: <ProtectedRoute permiso={PERMISOS.especialidades.listar} />,
             children: [{ path: 'especialidades', element: page(() => import('@/modules/servicios/pages/EspecialidadesPage'), 'EspecialidadesPage') }],
+          },
+          {
+            element: <ProtectedRoute permiso={PERMISOS.especialistas.listar} />,
+            children: [{ path: 'especialistas', element: page(() => import('@/modules/talento/pages/EspecialistasPage'), 'EspecialistasPage') }],
           },
           {
             element: <ProtectedRoute permiso={PERMISOS.catalogos.listar} />,

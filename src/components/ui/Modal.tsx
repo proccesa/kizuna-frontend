@@ -38,7 +38,7 @@ export function Modal({ open, onClose, title, description, size = 'md', footer, 
     (firstField ?? panelRef.current)?.focus();
 
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape' && closeRef.current.dismissible) closeRef.current.onClose();
+      if (event.key === 'Escape' && !event.defaultPrevented && closeRef.current.dismissible) closeRef.current.onClose();
     };
     document.addEventListener('keydown', onKeyDown);
 

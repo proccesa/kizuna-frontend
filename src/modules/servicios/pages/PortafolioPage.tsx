@@ -5,6 +5,7 @@ import { Badge, Button, Card, ConfirmDialog, EmptyState, FilterTabs, PageHeader,
 import { useListParams } from '@/hooks/useListParams';
 import { useAuth } from '@/modules/auth/hooks/useAuth';
 import { PERMISOS } from '@/modules/auth/permisos';
+import { TIPOS_SALA } from '@/modules/inventario/types';
 import { useSedes } from '@/modules/red/hooks/useRed';
 import { AgregarServiciosModal } from '../components/AgregarServiciosModal';
 import { useEspecialidades, usePortafolio, useServiciosMutations } from '../hooks/useServicios';
@@ -67,6 +68,23 @@ export function PortafolioPage() {
           />
         ) : (
           <span className="tabular">{i.duracion_minutos} min</span>
+        ),
+    },
+    {
+      key: 'sala',
+      header: 'Sala',
+      cell: (i) =>
+        puedeEditar ? (
+          <Select
+            aria-label={`Sala para ${i.cups.codigo} en ${i.sede.nombre}`}
+            value={i.tipo_sala ?? ''}
+            onChange={(e) => actualizarPortafolio.mutate({ id: i.id, payload: { tipo_sala: e.target.value || null } })}
+            placeholder="No requiere"
+            options={TIPOS_SALA}
+            className="h-9 w-44 text-sm"
+          />
+        ) : (
+          <span className="text-sm">{TIPOS_SALA.find((t) => t.value === i.tipo_sala)?.label ?? 'No requiere'}</span>
         ),
     },
     {
