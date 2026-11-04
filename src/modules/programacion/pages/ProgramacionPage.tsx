@@ -293,7 +293,7 @@ function Cola() {
                 <div className="mt-1.5 flex flex-wrap gap-1">
                   {e.factores.map((f) => (
                     <Badge key={f.etiqueta} tone={f.etiqueta.includes('prioritaria') ? 'warning' : f.etiqueta.startsWith('Aval') ? 'danger' : 'mist'}>
-                      {f.etiqueta} · +{formatNumber(f.puntos)}
+                      {f.etiqueta} · {f.puntos >= 0 ? '+' : ''}{formatNumber(f.puntos)}
                     </Badge>
                   ))}
                   {e.temprano && <Badge tone="lime">Primera hora: {e.temprano.toLowerCase()}</Badge>}

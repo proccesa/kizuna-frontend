@@ -83,7 +83,7 @@ export function CirugiaCard({ cirugia: c, onQuitar, onRealizar, onCancelar }: Ci
           {factores.map((f) => (
             <li key={f.etiqueta} className="flex justify-between gap-2">
               <span>{f.etiqueta}</span>
-              <span className="tabular font-semibold">+{formatNumber(f.puntos)}</span>
+              <span className="tabular font-semibold">{f.puntos >= 0 ? '+' : ''}{formatNumber(f.puntos)}</span>
             </li>
           ))}
         </ul>
