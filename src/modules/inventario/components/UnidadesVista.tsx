@@ -37,7 +37,7 @@ export function UnidadesVista({ tipo }: { tipo: Extract<TipoItem, 'EQUIPO' | 'IN
       cell: (u) => (
         <button type="button" onClick={() => update({ unidad: u.id })} className="cursor-pointer text-left">
           <span className="tabular block font-display font-bold whitespace-nowrap text-ink hover:underline">{u.codigo}</span>
-          <span className="block text-xs text-muted">{u.item.nombre}</span>
+          <span className="block text-xs text-muted">{u.item?.nombre ?? '—'}</span>
         </button>
       ),
     },
@@ -47,7 +47,7 @@ export function UnidadesVista({ tipo }: { tipo: Extract<TipoItem, 'EQUIPO' | 'IN
       header: 'Ubicación',
       cell: (u) => (
         <span className="text-sm whitespace-nowrap">
-          {u.sede.nombre}
+          {u.sede?.nombre ?? '—'}
           {esEquipo && <span className="block text-xs text-muted">{u.sala ? `Fijo en ${u.sala.nombre}` : 'Móvil'}</span>}
         </span>
       ),
@@ -70,7 +70,7 @@ export function UnidadesVista({ tipo }: { tipo: Extract<TipoItem, 'EQUIPO' | 'IN
             key: 'calibracion',
             header: 'Calibración',
             cell: (u: Unidad) => {
-              if (!u.item.requiere_calibracion) return <span className="text-xs text-subtle">No aplica</span>;
+              if (!u.item?.requiere_calibracion) return <span className="text-xs text-subtle">No aplica</span>;
               const a = u.alertas.find((x) => x.tipo === 'calibracion_vence');
               return (
                 <span className={cn('tabular text-xs whitespace-nowrap', a?.nivel === 'bloqueo' || !u.calibracion_vence ? 'font-semibold text-danger' : a ? 'font-semibold text-warning' : 'text-body')}>
@@ -84,7 +84,7 @@ export function UnidadesVista({ tipo }: { tipo: Extract<TipoItem, 'EQUIPO' | 'IN
           {
             key: 'esterilizacion',
             header: 'Esterilización',
-            cell: (u: Unidad) => <span className="text-xs">{u.item.minutos_esterilizacion ? `${u.item.minutos_esterilizacion} min entre usos` : '—'}</span>,
+            cell: (u: Unidad) => <span className="text-xs">{u.item?.minutos_esterilizacion ? `${u.item.minutos_esterilizacion} min entre usos` : '—'}</span>,
           },
         ]),
     {
