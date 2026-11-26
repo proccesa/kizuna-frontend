@@ -17,9 +17,12 @@ type Pestana = 'servicios' | 'especialidades';
 function agruparPorCups(items: PortafolioItem[]) {
   const mapa = new Map<number, { cups: PortafolioItem['cups']; sedes: string[] }>();
   for (const i of items) {
+    if (!i.cups) continue;
+    const sede = i.sede?.nombre;
     const actual = mapa.get(i.cups.id);
-    if (actual) actual.sedes.push(i.sede.nombre);
-    else mapa.set(i.cups.id, { cups: i.cups, sedes: [i.sede.nombre] });
+    if (actual) {
+      if (sede) actual.sedes.push(sede);
+    } else mapa.set(i.cups.id, { cups: i.cups, sedes: sede ? [sede] : [] });
   }
   return [...mapa.values()];
 }
@@ -74,7 +77,7 @@ function ServiciosEspecialidades({ buscar, onBuscar }: { buscar: string; onBusca
                 <div className="min-w-0 lg:w-[26rem] lg:shrink-0">
                   <p className="tabular font-display font-bold text-ink">{cups.codigo}</p>
                   <p className="text-xs leading-snug text-body">{cups.nombre}</p>
-                  <p className="mt-0.5 text-xs text-muted">En {sedes.join(', ')}</p>
+                  {sedes.length > 0 && <p className="mt-0.5 text-xs text-muted">En {sedes.join(', ')}</p>}
                 </div>
                 <div className="flex flex-1 flex-wrap items-center gap-1.5">
                   {cups.especialidades.map((e) => (
